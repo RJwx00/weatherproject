@@ -34,8 +34,11 @@
                 }
             });
 
+            // Build the correct API endpoint based on the days
+            const endpoint = `/api/weatherData?days=${days}`;
+
             // Fetch the storm risk data for the selected forecast period
-            fetch(`/api/weatherData/${days === 1 ? '1day' : days === 3 ? '3day' : '7day'}`)
+            fetch(endpoint)
                 .then(response => response.json())
                 .then(data => {
                     // Check if we received valid data
