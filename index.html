@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Severe Storm Risk Maps</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; }
+    </style>
+</head>
+<body>
+    <h1>Severe Storm Risk Maps</h1>
+
+    <button onclick="loadRiskMap(1)">1-Day Risk Map</button>
+    <button onclick="loadRiskMap(3)">3-Day Risk Map</button>
+    <button onclick="loadRiskMap(7)">7-Day Risk Map</button>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([39.8283, -98.5795], 5); // Centered over the CONUS
+
+        // Add a base layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        function loadRiskMap(days) {
+            // Clear existing layers
+            map.eachLayer(function(layer) {
+                if (layer != map._tiles) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Fetch the storm risk data for the selected forecast period
+            fetch(`/api/weatherData/${days === 1 ? '1day' : days === 3 ? '3day' : '7day'}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Check if we received valid data
+                    if (data && data.features) {
+                        // Add the risk map polygons to the map
+                        L.geoJSON(data, {
+                            style: function (feature) {
+                                // Assign colors based on risk level
+                                var risk = feature.properties.risk_level;
+                                var color = 'gray';
+
+                                if (risk == 'MRGL') color = 'green';
+                                else if (risk == 'SLGT') color = 'yellow';
+                                else if (risk == 'ENH') color = 'orange';
+                                else if (risk == 'MDT') color = 'red';
+                                else if (risk == 'HIGH') color = 'purple';
+
+                                return {
+                                    color: color,
+                                    weight: 1,
+                                    fillOpacity: 0.5
+                                };
+                            }
+                        }).addTo(map);
+                    } else {
+                        alert('Failed to load risk data');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching risk map data:', error);
+                    alert('Error loading data');
+                });
+        }
+    </script>
+</body>
+</html>
